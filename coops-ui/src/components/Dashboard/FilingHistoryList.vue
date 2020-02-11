@@ -6,20 +6,16 @@
       attach="#filing-history-list"
     />
 
-    <v-expansion-panels v-if="filedItems && filedItems.length > 0" v-model="panel" accordion>
+    <v-expansion-panels v-if="filedItems && filedItems.length > 0" v-model="panel">
       <v-expansion-panel
-        class="align-items-top filing-item"
+        class="align-items-top filing-history-item"
         v-for="(item, index) in filedItems"
         :key="index"
       >
-        <v-expansion-panel-header class="filing-item-toggle">
+        <v-expansion-panel-header>
           <div class="list-item">
-            <div class="filing-label">
-              <v-row>
-                <v-col cols="6" class="v-col-padding">
-                  <div class="list-item__title mb-1">{{item.name}}</div>
-                </v-col>
-              </v-row>
+            <div>
+              <h3>{{item.name}}</h3>
               <div class="list-item__subtitle">
                 <v-scale-transition v-if="isCoaFutureEffective(item.name, item.status)">
                   <v-tooltip
@@ -41,80 +37,140 @@
                   </v-tooltip>
                 </v-scale-transition>
                 <span v-else>FILED AND PAID (filed by {{item.filingAuthor}} on {{item.filingDate}})</span>
+                <span>2 comments</span>
               </div>
             </div>
-            <div class="filing-action mr-3">
-              <template v-if="panel === index">
-                <span v-if="item.paperOnly">Close</span>
-                <span v-else>Hide Documents</span>
-              </template>
-              <template v-else>
-                <span v-if="item.paperOnly">Request a Copy</span>
-                <span v-else>View Documents</span>
-              </template>
+
+            <div class="filing-item__actions">
+              <div class="toggle-info mr-3">
+                <template v-if="panel === index">
+                  <span v-if="item.paperOnly">Close</span>
+                  <span v-else>Hide Documents</span>
+                </template>
+                <template v-else>
+                  <span v-if="item.paperOnly">Request a Copy</span>
+                  <span v-else>View Documents</span>
+                </template>
+              </div>
+              <v-menu bottom left transition="slide-y-transition">
+                <template v-slot:activator="{ on }">
+                  <v-btn icon v-on="on">
+                    <v-icon>mdi-dots-horizontal</v-icon>
+                  </v-btn>
+                </template>
+                <v-list dense>
+                  <v-list-item-group color="primary">
+                    <v-list-item>
+                      <v-list-item-icon>
+                        <v-icon>mdi-file-document-edit-outline</v-icon>
+                      </v-list-item-icon>
+                      <v-list-item-title>File a Correction</v-list-item-title>
+                    </v-list-item>
+                    <v-list-item>
+                      <v-list-item-icon>
+                        <v-icon>mdi-comment-plus</v-icon>
+                      </v-list-item-icon>
+                      <v-list-item-title @click="commentDialog='true'">Add Comment</v-list-item-title>
+                    </v-list-item>
+                  </v-list-item-group>
+                </v-list>
+              </v-menu>
             </div>
           </div>
+
         </v-expansion-panel-header>
 
         <v-expansion-panel-content>
-          <ul v-if="!item.paperOnly" class="list document-list">
-            <li class="list-item"
+          <v-list dense class="mt-n1 mb-n3 pt-0 pb-0" v-if="!item.paperOnly">
+            <v-list-item class="pl-0 pr-0"
               v-for="(document, index) in item.filingDocuments"
               :key="index"
             >
-              <v-btn class="list-item__btn" text color="primary"
+              <v-btn text color="primary" class="pl-1 pr-2"
                 @click="downloadDocument(document)"
                 :disabled="loadingDocument"
                 :loading="loadingDocument"
               >
-                <img class="list-item__icon" src="@/assets/images/icons/file-pdf-outline.svg" />
-                <div class="list-item__title">{{document.name}}</div>
+                <v-icon>mdi-file-pdf-outline</v-icon>
+                <span>{{document.name}}</span>
               </v-btn>
-            </li>
-            <li class="list-item"
+            </v-list-item>
+            <v-list-item class="pl-0 pr-0"
               v-if="item.paymentToken"
             >
-              <v-btn class="list-item__btn" text color="primary"
+              <v-btn text color="primary" class="pl-1 pr-2"
                 @click="downloadReceipt(item)"
                 :disabled="loadingReceipt"
                 :loading="loadingReceipt"
               >
-                <img class="list-item__icon" src="@/assets/images/icons/file-pdf-outline.svg" />
-                <div class="list-item__title">Receipt</div>
+                <v-icon>mdi-file-pdf-outline</v-icon>
+                <span>Receipt</span>
               </v-btn>
-            </li>
-          </ul>
+            </v-list-item>
+            <v-list-item class="pl-0 pr-0">
+              <v-btn text color="primary" class="pl-1 pr-2"
+                @click="downloadAll(item)"
+                :disabled="loadingAll"
+                :loading="loadingAll"
+              >
+                <v-icon>mdi-download</v-icon>
+                <span>Download all</span>
+              </v-btn>
+            </v-list-item>
+          </v-list>
 
-          <div v-if="!item.paperOnly" class="documents-actions-bar">
-            <v-btn class="download-all-btn" color="primary"
-              @click="downloadAll(item)"
-              :disabled="loadingAll"
-              :loading="loadingAll"
-            >
-              <span>Download All</span>
-            </v-btn>
+          <div class="body-2" v-if="item.paperOnly">
+            <p>Filings completed <b>before March 10, 2019</b>
+            are only available from the BC Registry as paper documents.</p>
+            <p>To request copies of paper documents, contact BC Registry Staff
+            with the document you require and the name and incorporation number of your association:</p>
+            <ul class="contact-info__list mt-5">
+              <li>
+                <span>Toll Free:</span> 1 877 526-1526
+              </li>
+              <li>
+                <span>Phone:</span> 250 387-7848
+              </li>
+              <li>
+                <span>Email:</span> <a href="mailto:bcregistries@gov.bc.ca">bcregistries@gov.bc.ca</a>
+              </li>
+            </ul>
           </div>
 
-          <v-card v-if="item.paperOnly" class="paper-filings" flat>
-            <v-card-text>
-              <div class="paper-filings__text">
-                Filings completed <b>before March 10, 2019</b> are only available from the BC Registry as paper
-                documents.
-                <br><br>
-                To request copies of paper documents, contact BC Registry Staff with the document you require and
-                the name and incorporation number of your association:
-                <br><br>
-                <p class="paper-filings__text">
-                  <v-icon medium>mdi-phone</v-icon>
-                  <a href="tel:+1-877-526-1526">1 877 526-1526</a>
-                </p>
-                <p class="paper-filings__text">
-                  <v-icon medium>mdi-email</v-icon>
-                  <a href="mailto:BCRegistries@gov.bc.ca">BCRegistries@gov.bc.ca</a>
-                </p>
-              </div>
-            </v-card-text>
-          </v-card>
+          <div class="comments-section mt-8">
+            <v-divider></v-divider>
+            <div class="title-bar mt-5">
+              <h4>Comments (2)</h4>
+              <v-btn color="primary" @click.stop="commentDialog = true">Add a comment</v-btn>
+            </div>
+            <div>
+              <v-list>
+                <v-list-item class="pl-0 pr-0">
+                  <v-list-item-content>
+                    <v-list-item-title class="body-2">
+                      <strong>idir/scotdavi</strong> (2019-09-30 - 12:45pm PST)
+                    </v-list-item-title>
+                    <v-list-item-subtitle class="body-2">
+                      <div>Address Change Correction</div>
+                      <div>Changed delivery address</div>
+                    </v-list-item-subtitle>
+                  </v-list-item-content>
+                </v-list-item>
+                <v-list-item class="pl-0 pr-0">
+                  <v-list-item-content>
+                    <v-list-item-title class="body-2">
+                      <strong>idir/scotdavi</strong> (2019-09-30 - 12:45pm PST)
+                    </v-list-item-title>
+                    <v-list-item-subtitle class="body-2">
+                      <div>Address Change Correction</div>
+                      <div>Changed mailing address</div>
+                    </v-list-item-subtitle>
+                  </v-list-item-content>
+                </v-list-item>
+              </v-list>
+            </div>
+          </div>
+
         </v-expansion-panel-content>
       </v-expansion-panel>
     </v-expansion-panels>
@@ -126,6 +182,27 @@
         <div class="no-results__subtitle">Your completed filings and transactions will appear here</div>
       </v-card-text>
     </v-card>
+
+    <v-dialog width="640" v-model="commentDialog">
+      <v-card>
+        <v-card-title>Add a comment</v-card-title>
+        <v-card-text>
+          <v-form>
+            <v-textarea dense filled auto-grow rows="2" row-height="26" class="mt-3"
+            label="Add a comment"
+            hide-details
+            ></v-textarea>
+            <v-checkbox dense hide-details label="Attach comment to this filing"></v-checkbox>
+            <v-checkbox dense hide-details class="mt-1"
+              label="Create a separate ledger entry for this comment">
+            </v-checkbox>
+            <div class="form__btns mt-5" @click.stop="commentDialog = false">
+              <v-btn color="primary">Post</v-btn>
+            </div>
+          </v-form>
+        </v-card-text>
+      </v-card>
+    </v-dialog>
   </div>
 </template>
 
@@ -161,6 +238,7 @@ export default {
       loadingDocument: false,
       loadingReceipt: false,
       loadingAll: false,
+      commentDialog: false,
 
       // Enum
       EntityTypes
@@ -509,32 +587,6 @@ export default {
   background-color: black;
 }
 
-  // Document List
-.document-list {
-  border-top: 1px solid $gray3;
-  padding-left: 0;
-
-  .list-item {
-    padding: 0.25rem 0;
-  }
-
-  .v-btn {
-    padding: 0 0.5rem 0 0.25rem;
-  }
-}
-
-  // Documents Actions Bar
-.documents-actions-bar {
-  display: flex;
-  justify-content: flex-end;
-  padding-top: 1rem;
-  border-top: 1px solid $gray3;
-
-  .download-all-btn {
-    min-width: 8rem;
-  }
-}
-
 // Past Filings
 .past-filings {
   border-top: 1px solid $gray3;
@@ -548,21 +600,65 @@ export default {
   }
 }
 
-.paper-filings {
-  border-top: 1px solid $gray3;
-  text-align: left;
+.v-textarea textarea {
+  line-height: 1.5rem;
+}
 
-  .paper-filings__text {
-    margin-top: 0.2rem;
-    color: $gray9;
-    font-size: 0.8rem;
-    font-weight: 400;
-    line-height: 1rem;
-
-    a {
-      color: $gray7;
-      margin-left: 1rem;
+.list-item__subtitle {
+  span + span {
+    &:before {
+      display: inline-block;
+      margin-left: 0.5rem;
+      margin-right: 0.5rem;
+      content: '•'
     }
+  }
+}
+
+.form__btns {
+  justify-content: flex-end;
+}
+
+.v-expansion-panel-header {
+  padding-top: 1.25rem !important;
+  padding-bottom: 1.25rem !important;
+}
+
+.title-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+::v-deep {
+  .v-expansion-panel-header__icon {
+    display: none !important;
+  }
+}
+
+.filing-history-item {
+  h3 {
+    margin-bottom: 0.25rem;
+  }
+}
+
+.filing-item__actions {
+  margin-top: -0.5rem;
+  white-space: nowrap;
+
+  .toggle-info {
+    display: inline-block;
+    letter-spacing: -0.01rem;
+    font-size: 0.875rem;
+    font-weight: 700;
+  }
+}
+
+.comments-section {
+  h4 {
+    letter-spacing: 0;
+    font-size: 0.9375rem;
+    font-weight: 700;
   }
 }
 </style>
